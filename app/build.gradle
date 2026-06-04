@@ -6,7 +6,7 @@ android {
     namespace "com.pda.uhf_g"
     compileSdk 34
     defaultConfig {
-        applicationId "com.pda.uhf_g"
+        applicationId "com.pda.uhf_g_inventory"
         minSdkVersion 19
         targetSdkVersion 34
         versionCode 37
