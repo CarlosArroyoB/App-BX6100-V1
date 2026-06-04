@@ -208,7 +208,7 @@ public class RoomInventoryActivity extends AppCompatActivity {
     private void loadCsvData() {
         android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_GET_CONTENT);
         intent.setType("*/*");
-        String[] mimetypes = {"text/csv", "text/comma-separated-values", "application/csv"};
+        String[] mimetypes = {"text/csv", "text/comma-separated-values", "application/csv", "application/vnd.ms-excel"};
         intent.putExtra(android.content.Intent.EXTRA_MIME_TYPES, mimetypes);
         startActivityForResult(intent, 101);
     }

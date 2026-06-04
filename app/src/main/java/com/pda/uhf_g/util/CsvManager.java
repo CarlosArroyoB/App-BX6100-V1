@@ -1,5 +1,7 @@
 package com.pda.uhf_g.util;
 
+import android.content.Context;
+import android.net.Uri;
 import android.os.Environment;
 import android.util.Log;
 
@@ -7,23 +9,84 @@ import com.pda.uhf_g.entity.Equipment;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
+import jxl.Sheet;
+import jxl.Workbook;
+import jxl.write.Label;
+import jxl.write.WritableSheet;
+import jxl.write.WritableWorkbook;
+
 public class CsvManager {
     private static final String TAG = "CsvManager";
 
-    public static List<Equipment> loadEquipmentsFromUri(android.content.Context context, android.net.Uri uri) {
+    public static List<Equipment> loadEquipmentsFromUri(Context context, Uri uri) {
+        String displayName = getDisplayName(context, uri);
+        if (displayName != null && displayName.toLowerCase().endsWith(".xls")) {
+            return loadFromExcel(context, uri);
+        } else {
+            return loadFromCsv(context, uri);
+        }
+    }
+
+    private static String getDisplayName(Context context, Uri uri) {
+        android.database.Cursor cursor = null;
+        try {
+            cursor = context.getContentResolver().query(uri, null, null, null, null);
+            if (cursor != null && cursor.moveToFirst()) {
+                int nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME);
+                if (nameIndex != -1) {
+                    return cursor.getString(nameIndex);
+                }
+            }
+        } catch (Exception e) {
+            // Ignore
+        } finally {
+            if (cursor != null) cursor.close();
+        }
+        return uri.getPath();
+    }
+
+    private static List<Equipment> loadFromExcel(Context context, Uri uri) {
         List<Equipment> equipmentList = new ArrayList<>();
-        
-        try (java.io.InputStream is = context.getContentResolver().openInputStream(uri);
-             BufferedReader br = new BufferedReader(new java.io.InputStreamReader(is))) {
+        try (InputStream is = context.getContentResolver().openInputStream(uri)) {
+            Workbook workbook = Workbook.getWorkbook(is);
+            Sheet sheet = workbook.getSheet(0);
+            int rows = sheet.getRows();
+            for (int i = 1; i < rows; i++) { // Skip header (row 0)
+                if (sheet.getColumns() >= 7) {
+                    String epc = sheet.getCell(0, i).getContents().trim();
+                    String itemNumber = sheet.getCell(1, i).getContents().trim();
+                    String serialNumber = sheet.getCell(2, i).getContents().trim();
+                    String brand = sheet.getCell(3, i).getContents().trim();
+                    String model = sheet.getCell(4, i).getContents().trim();
+                    String room = sheet.getCell(5, i).getContents().trim();
+                    String description = sheet.getCell(6, i).getContents().trim();
+                    
+                    if (!epc.isEmpty()) {
+                        equipmentList.add(new Equipment(epc, itemNumber, serialNumber, brand, model, room, description));
+                    }
+                }
+            }
+            workbook.close();
+        } catch (Exception e) {
+            Log.e(TAG, "Error reading Excel from Uri", e);
+        }
+        return equipmentList;
+    }
+
+    private static List<Equipment> loadFromCsv(Context context, Uri uri) {
+        List<Equipment> equipmentList = new ArrayList<>();
+        try (InputStream is = context.getContentResolver().openInputStream(uri);
+             BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
             String line;
             boolean isFirstLine = true;
             while ((line = br.readLine()) != null) {
@@ -46,35 +109,53 @@ public class CsvManager {
         } catch (Exception e) {
             Log.e(TAG, "Error reading CSV from Uri", e);
         }
-
         return equipmentList;
     }
 
     public static String exportInventoryResult(List<Equipment> equipments, String roomName) {
         File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-        String fileName = "resultado_inventario_" + roomName + "_" + timeStamp + ".csv";
+        String fileName = "resultado_inventario_" + roomName + "_" + timeStamp + ".xls";
         File resultFile = new File(downloadsDir, fileName);
 
-        try (FileWriter fw = new FileWriter(resultFile)) {
-            fw.append("Codigo EPC,Nro Item,Numero de serie,Marca,Modelo,Habitacion,Descripcion,Estado,Fecha\n");
+        try {
+            WritableWorkbook workbook = Workbook.createWorkbook(resultFile);
+            WritableSheet sheet = workbook.createSheet("Inventario", 0);
+
+            // Headers
+            String[] headers = {"Codigo EPC", "Nro Item", "Numero de serie", "Marca", "Modelo", "Habitacion", "Descripcion", "Estado", "Lecturas", "Fecha"};
+            
+            // Format for headers
+            jxl.write.WritableFont boldFont = new jxl.write.WritableFont(jxl.write.WritableFont.ARIAL, 10, jxl.write.WritableFont.BOLD);
+            jxl.write.WritableCellFormat boldFormat = new jxl.write.WritableCellFormat(boldFont);
+            boldFormat.setBackground(jxl.format.Colour.GRAY_25);
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.addCell(new Label(i, 0, headers[i], boldFormat));
+            }
+
             String currentDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
             
-            for (Equipment eq : equipments) {
-                fw.append(eq.getEpc()).append(",");
-                fw.append(eq.getItemNumber()).append(",");
-                fw.append(eq.getSerialNumber()).append(",");
-                fw.append(eq.getBrand()).append(",");
-                fw.append(eq.getModel()).append(",");
-                fw.append(eq.getRoom()).append(",");
-                fw.append(eq.getDescription()).append(",");
-                fw.append(eq.isFound() ? "Encontrado" : "Faltante").append(",");
-                fw.append(currentDate).append("\n");
+            for (int i = 0; i < equipments.size(); i++) {
+                Equipment eq = equipments.get(i);
+                int row = i + 1;
+                sheet.addCell(new Label(0, row, eq.getEpc()));
+                sheet.addCell(new Label(1, row, eq.getItemNumber()));
+                sheet.addCell(new Label(2, row, eq.getSerialNumber()));
+                sheet.addCell(new Label(3, row, eq.getBrand()));
+                sheet.addCell(new Label(4, row, eq.getModel()));
+                sheet.addCell(new Label(5, row, eq.getRoom()));
+                sheet.addCell(new Label(6, row, eq.getDescription()));
+                sheet.addCell(new Label(7, row, eq.isFound() ? "Encontrado" : "Faltante"));
+                sheet.addCell(new Label(8, row, String.valueOf(eq.getReadCount())));
+                sheet.addCell(new Label(9, row, currentDate));
             }
-            fw.flush();
+
+            workbook.write();
+            workbook.close();
             return resultFile.getAbsolutePath();
-        } catch (IOException e) {
-            Log.e(TAG, "Error exporting CSV", e);
+        } catch (Exception e) {
+            Log.e(TAG, "Error exporting Excel", e);
             return null;
         }
     }
