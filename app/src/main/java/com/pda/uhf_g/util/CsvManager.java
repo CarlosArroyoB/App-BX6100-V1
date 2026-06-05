@@ -159,4 +159,47 @@ public class CsvManager {
             return null;
         }
     }
+
+    public static boolean exportInventoryResultToUri(Context context, List<Equipment> equipments, String roomName, Uri uri) {
+        try (java.io.OutputStream os = context.getContentResolver().openOutputStream(uri)) {
+            WritableWorkbook workbook = Workbook.createWorkbook(os);
+            WritableSheet sheet = workbook.createSheet("Inventario", 0);
+
+            // Headers
+            String[] headers = {"Codigo EPC", "Nro Item", "Numero de serie", "Marca", "Modelo", "Habitacion", "Descripcion", "Estado", "Lecturas", "Fecha"};
+            
+            // Format for headers
+            jxl.write.WritableFont boldFont = new jxl.write.WritableFont(jxl.write.WritableFont.ARIAL, 10, jxl.write.WritableFont.BOLD);
+            jxl.write.WritableCellFormat boldFormat = new jxl.write.WritableCellFormat(boldFont);
+            boldFormat.setBackground(jxl.format.Colour.GRAY_25);
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.addCell(new Label(i, 0, headers[i], boldFormat));
+            }
+
+            String currentDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
+            
+            for (int i = 0; i < equipments.size(); i++) {
+                Equipment eq = equipments.get(i);
+                int row = i + 1;
+                sheet.addCell(new Label(0, row, eq.getEpc()));
+                sheet.addCell(new Label(1, row, eq.getItemNumber()));
+                sheet.addCell(new Label(2, row, eq.getSerialNumber()));
+                sheet.addCell(new Label(3, row, eq.getBrand()));
+                sheet.addCell(new Label(4, row, eq.getModel()));
+                sheet.addCell(new Label(5, row, eq.getRoom()));
+                sheet.addCell(new Label(6, row, eq.getDescription()));
+                sheet.addCell(new Label(7, row, eq.isFound() ? "Encontrado" : "Faltante"));
+                sheet.addCell(new Label(8, row, String.valueOf(eq.getReadCount())));
+                sheet.addCell(new Label(9, row, currentDate));
+            }
+
+            workbook.write();
+            workbook.close();
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "Error exporting Excel to Uri", e);
+            return false;
+        }
+    }
 }

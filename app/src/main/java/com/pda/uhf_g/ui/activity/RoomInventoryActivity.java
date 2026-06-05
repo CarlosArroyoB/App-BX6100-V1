@@ -240,6 +240,16 @@ public class RoomInventoryActivity extends AppCompatActivity {
                     filterByRoom();
                 }
             }
+        } else if (requestCode == 102 && resultCode == RESULT_OK && data != null) {
+            android.net.Uri uri = data.getData();
+            if (uri != null) {
+                boolean success = CsvManager.exportInventoryResultToUri(this, currentRoomEquipments, selectedRoom, uri);
+                if (success) {
+                    Toast.makeText(this, "Guardado exitosamente", Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(this, "Error al guardar el archivo", Toast.LENGTH_SHORT).show();
+                }
+            }
         }
     }
 
@@ -261,12 +271,12 @@ public class RoomInventoryActivity extends AppCompatActivity {
             Toast.makeText(this, "No hay datos para guardar", Toast.LENGTH_SHORT).show();
             return;
         }
-        String path = CsvManager.exportInventoryResult(currentRoomEquipments, selectedRoom);
-        if (path != null) {
-            Toast.makeText(this, "Guardado exitosamente en: " + path, Toast.LENGTH_LONG).show();
-        } else {
-            Toast.makeText(this, "Error al guardar el archivo", Toast.LENGTH_SHORT).show();
-        }
+        String timeStamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(new java.util.Date());
+        android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(android.content.Intent.CATEGORY_OPENABLE);
+        intent.setType("application/vnd.ms-excel");
+        intent.putExtra(android.content.Intent.EXTRA_TITLE, "resultado_inventario_" + selectedRoom + "_" + timeStamp + ".xls");
+        startActivityForResult(intent, 102);
     }
 
     @Override
