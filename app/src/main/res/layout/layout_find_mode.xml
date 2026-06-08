@@ -44,6 +44,21 @@
     </LinearLayout>
 
     <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="O selecciona del inventario:"
+        android:textSize="14sp"
+        android:layout_marginBottom="4dp"/>
+
+    <Spinner
+        android:id="@+id/spinner_find_equipment"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FFFFFF"
+        android:padding="8dp"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
         android:id="@+id/tv_target_epc_display"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
