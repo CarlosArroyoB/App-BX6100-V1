@@ -590,12 +590,22 @@ public class RoomInventoryActivity extends AppCompatActivity {
                         if (isFindMode) {
                             if (epcStr.equalsIgnoreCase(targetEpc)) {
                                 int rssi = tfs.RSSI;
-                                int percentage = (rssi + 70) * 100 / 40;
+                                // Expand the range so it starts detecting from further away
+                                // Previous: (rssi + 70) * 100 / 40 -> 0% at -70, 100% at -30
+                                // New: (rssi + 85) * 100 / 50 -> 0% at -85, 100% at -35
+                                int percentage = (rssi + 85) * 100 / 50;
                                 if (percentage < 0) percentage = 0;
                                 if (percentage > 100) percentage = 100;
                                 
                                 long currentTime = System.currentTimeMillis();
-                                int beepInterval = (int) (1000 - (percentage * 9.5));
+                                int beepInterval;
+                                if (percentage < 20) {
+                                    beepInterval = 1000 - (percentage * 20); // 0% -> 1000ms, 20% -> 600ms
+                                } else if (percentage < 60) {
+                                    beepInterval = 600 - ((percentage - 20) * 10); // 20% -> 600ms, 60% -> 200ms
+                                } else {
+                                    beepInterval = 200 - (int)((percentage - 60) * 3.75); // 60% -> 200ms, 100% -> 50ms
+                                }
                                 if (beepInterval < 50) beepInterval = 50;
                                 
                                 if (currentTime - lastBeepTime > beepInterval) {
