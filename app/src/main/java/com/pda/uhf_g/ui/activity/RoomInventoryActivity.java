@@ -110,6 +110,8 @@ public class RoomInventoryActivity extends AppCompatActivity {
             if (msg.what == MSG_EPC) {
                 String epc = (String) msg.obj;
                 adapter.markAsFound(epc);
+                totalRawReads++;
+                updateCounters();
                 return true;
             }
             return false;
