@@ -340,10 +340,6 @@ public class RoomInventoryActivity extends AppCompatActivity {
                 Set<String> rooms = new HashSet<>();
                 Set<String> types = new HashSet<>();
                 Set<String> models = new HashSet<>();
-                
-                rooms.add("Todos");
-                types.add("Todos");
-                models.add("Todos");
 
                 for (Equipment eq : allEquipments) {
                     if (eq.getRoom() != null && !eq.getRoom().trim().isEmpty()) rooms.add(eq.getRoom());
@@ -351,9 +347,17 @@ public class RoomInventoryActivity extends AppCompatActivity {
                     if (eq.getModel() != null && !eq.getModel().trim().isEmpty()) models.add(eq.getModel());
                 }
 
-                List<String> roomList = new ArrayList<>(rooms);
-                List<String> typeList = new ArrayList<>(types);
-                List<String> modelList = new ArrayList<>(models);
+                List<String> roomList = new ArrayList<>();
+                roomList.add("Todos");
+                roomList.addAll(rooms);
+
+                List<String> typeList = new ArrayList<>();
+                typeList.add("Todos");
+                typeList.addAll(types);
+
+                List<String> modelList = new ArrayList<>();
+                modelList.add("Todos");
+                modelList.addAll(models);
 
                 ArrayAdapter<String> roomAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, roomList);
                 roomAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
