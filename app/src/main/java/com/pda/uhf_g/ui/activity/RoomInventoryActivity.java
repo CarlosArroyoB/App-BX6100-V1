@@ -15,6 +15,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -57,11 +58,10 @@ import java.util.Set;
 
 public class RoomInventoryActivity extends AppCompatActivity {
 
-    private static final String TAG = "RoomInventoryActivity";
     private Spinner spinnerRooms;
     private Spinner spinnerTypes;
     private Spinner spinnerModels;
-    private Spinner spinnerFindEquipment;
+    private AutoCompleteTextView autocompleteFindEquipment;
     private Button btnLoadCsv;
     private Button btnSaveInventory;
     private TextView tvStatus;
@@ -132,7 +132,7 @@ public class RoomInventoryActivity extends AppCompatActivity {
         spinnerRooms = findViewById(R.id.spinner_rooms);
         spinnerTypes = findViewById(R.id.spinner_types);
         spinnerModels = findViewById(R.id.spinner_models);
-        spinnerFindEquipment = findViewById(R.id.spinner_find_equipment);
+        autocompleteFindEquipment = findViewById(R.id.autocomplete_find_equipment);
         btnLoadCsv = findViewById(R.id.btn_load_csv);
         btnSaveInventory = findViewById(R.id.btn_save_inventory);
         tvStatus = findViewById(R.id.tv_status);
@@ -198,19 +198,22 @@ public class RoomInventoryActivity extends AppCompatActivity {
             }
         });
 
-        spinnerFindEquipment.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (position > 0) { // skip the "Seleccionar equipo..." hint
-                    Equipment selected = allEquipments.get(position - 1);
-                    targetEpc = selected.getEpc();
+        autocompleteFindEquipment.setOnItemClickListener((parent, view, position, id) -> {
+            String selection = (String) parent.getItemAtPosition(position);
+            for (Equipment eq : allEquipments) {
+                String eqString = getEquipmentDisplayString(eq);
+                if (eqString.equals(selection)) {
+                    targetEpc = eq.getEpc();
                     etTargetEpc.setText(targetEpc);
-                    tvTargetEpcDisplay.setText("Objetivo: " + selected.getBrand() + " " + selected.getModel());
-                    Toast.makeText(RoomInventoryActivity.this, "Objetivo fijado: " + selected.getDescription(), Toast.LENGTH_SHORT).show();
+                    tvTargetEpcDisplay.setText("Objetivo: " + eq.getBrand() + " " + eq.getModel());
+                    Toast.makeText(RoomInventoryActivity.this, "Objetivo fijado: " + eq.getDescription(), Toast.LENGTH_SHORT).show();
+                    
+                    // Hide keyboard
+                    android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager) getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+                    imm.hideSoftInputFromWindow(autocompleteFindEquipment.getWindowToken(), 0);
+                    break;
                 }
             }
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {}
         });
 
         navigationView.setNavigationItemSelectedListener(item -> {
@@ -365,13 +368,11 @@ public class RoomInventoryActivity extends AppCompatActivity {
                 spinnerModels.setAdapter(modelAdapter);
 
                 List<String> findNames = new ArrayList<>();
-                findNames.add("Seleccionar equipo...");
                 for (Equipment eq : allEquipments) {
-                    findNames.add(eq.getType() + " " + eq.getBrand() + " " + eq.getModel() + " - " + eq.getDescription() + " (" + eq.getEpc() + ")");
+                    findNames.add(getEquipmentDisplayString(eq));
                 }
-                ArrayAdapter<String> findAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, findNames);
-                findAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                spinnerFindEquipment.setAdapter(findAdapter);
+                ArrayAdapter<String> findAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, findNames);
+                autocompleteFindEquipment.setAdapter(findAdapter);
 
                 selectedRoom = "Todos";
                 selectedType = "Todos";
@@ -406,6 +407,10 @@ public class RoomInventoryActivity extends AppCompatActivity {
         }
         adapter.updateData(currentRoomEquipments);
         tvStatus.setText("Equipos esperados: " + currentRoomEquipments.size());
+    }
+
+    private String getEquipmentDisplayString(Equipment eq) {
+        return eq.getType() + " " + eq.getBrand() + " " + eq.getModel() + " (SN: " + eq.getSerialNumber() + ") - " + eq.getDescription() + " [EPC: " + eq.getEpc() + "]";
     }
 
     private void saveInventory() {
