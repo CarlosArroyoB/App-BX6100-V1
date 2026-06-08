@@ -52,96 +52,187 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:gravity="center_vertical"
                         android:layout_marginBottom="8dp">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Zona/Espacio:"
-                            android:textSize="14sp"
-                            android:layout_marginEnd="8dp"/>
-
-                        <Spinner
-                            android:id="@+id/spinner_rooms"
+                        <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:background="#FFFFFF"
-                            android:padding="8dp"/>
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Zona/Espacio:"
+                                android:textSize="12sp"/>
+                            <Spinner
+                                android:id="@+id/spinner_rooms"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="#FFFFFF"
+                                android:padding="4dp"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:layout_marginHorizontal="4dp">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Tipo:"
+                                android:textSize="12sp"/>
+                            <Spinner
+                                android:id="@+id/spinner_types"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="#FFFFFF"
+                                android:padding="4dp"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Modelo:"
+                                android:textSize="12sp"/>
+                            <Spinner
+                                android:id="@+id/spinner_models"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:background="#FFFFFF"
+                                android:padding="4dp"/>
+                        </LinearLayout>
                     </LinearLayout>
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:gravity="center_vertical"
                         android:layout_marginBottom="8dp">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Tipo:"
-                            android:textSize="14sp"
-                            android:layout_marginEnd="8dp"/>
-
-                        <Spinner
-                            android:id="@+id/spinner_types"
+                        <Button
+                            android:id="@+id/btn_load_csv"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:background="#FFFFFF"
-                            android:padding="8dp"/>
+                            android:text="Cargar CSV/XLS"
+                            android:textSize="12sp"
+                            android:layout_marginEnd="4dp"/>
+                        <Button
+                            android:id="@+id/btn_save_inventory"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Guardar Excel"
+                            android:textSize="12sp"
+                            android:layout_marginStart="4dp"/>
                     </LinearLayout>
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:layout_marginBottom="16dp">
+                        android:background="#E0F7FA"
+                        android:padding="8dp"
+                        android:layout_marginBottom="8dp">
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Modelo:"
-                            android:textSize="14sp"
-                            android:layout_marginEnd="8dp"/>
-
-                        <Spinner
-                            android:id="@+id/spinner_models"
+                        <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:background="#FFFFFF"
-                            android:padding="8dp"/>
+                            android:orientation="vertical"
+                            android:gravity="center">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Por leer"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:textColor="#555555"/>
+                            <TextView
+                                android:id="@+id/tv_counter_expected"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:textColor="#333333"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Leídos"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:textColor="#4CAF50"/>
+                            <TextView
+                                android:id="@+id/tv_counter_read"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:textColor="#4CAF50"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Faltan"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:textColor="#F44336"/>
+                            <TextView
+                                android:id="@+id/tv_counter_missing"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:textColor="#F44336"/>
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Total Lect."
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:textColor="#2196F3"/>
+                            <TextView
+                                android:id="@+id/tv_counter_total_reads"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:textColor="#2196F3"/>
+                        </LinearLayout>
                     </LinearLayout>
-
-                    <Button
-                        android:id="@+id/btn_load_csv"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Cargar CSV/Excel desde Descargas"
-                        android:layout_marginBottom="8dp"/>
-
-                    <TextView
-                        android:id="@+id/tv_status"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Estado: Esperando..."
-                        android:textColor="#555555"
-                        android:layout_marginBottom="8dp"/>
-
-                    <Button
-                        android:id="@+id/btn_scan"
-                        android:layout_width="match_parent"
-                        android:layout_height="60dp"
-                        android:text="MANTENER PRESIONADO O PULSAR PARA ESCANEAR"
-                        android:backgroundTint="#2196F3"
-                        android:textColor="#FFFFFF"
-                        android:textStyle="bold"
-                        android:textSize="16sp"
-                        android:layout_marginBottom="8dp"/>
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/rv_equipment"
@@ -151,13 +242,6 @@
                         android:background="#FFFFFF"
                         android:padding="4dp"/>
 
-                    <Button
-                        android:id="@+id/btn_save_inventory"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Guardar Inventario"
-                        android:layout_marginTop="16dp"
-                        android:backgroundTint="#4CAF50"/>
                 </LinearLayout>
 
                 <!-- SETTINGS LAYOUT -->

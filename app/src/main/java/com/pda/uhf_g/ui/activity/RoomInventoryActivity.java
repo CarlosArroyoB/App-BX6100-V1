@@ -64,10 +64,13 @@ public class RoomInventoryActivity extends AppCompatActivity {
     private AutoCompleteTextView autocompleteFindEquipment;
     private Button btnLoadCsv;
     private Button btnSaveInventory;
-    private TextView tvStatus;
+    private TextView tvCounterExpected;
+    private TextView tvCounterRead;
+    private TextView tvCounterMissing;
+    private TextView tvCounterTotalReads;
+    private int totalRawReads = 0;
     private RecyclerView rvEquipment;
 
-    private Button btnScan;
     private Button btnScanFind;
     
     private LinearLayout layoutInventory, layoutSettings, layoutFind;
@@ -135,9 +138,11 @@ public class RoomInventoryActivity extends AppCompatActivity {
         autocompleteFindEquipment = findViewById(R.id.autocomplete_find_equipment);
         btnLoadCsv = findViewById(R.id.btn_load_csv);
         btnSaveInventory = findViewById(R.id.btn_save_inventory);
-        tvStatus = findViewById(R.id.tv_status);
+        tvCounterExpected = findViewById(R.id.tv_counter_expected);
+        tvCounterRead = findViewById(R.id.tv_counter_read);
+        tvCounterMissing = findViewById(R.id.tv_counter_missing);
+        tvCounterTotalReads = findViewById(R.id.tv_counter_total_reads);
         rvEquipment = findViewById(R.id.rv_equipment);
-        btnScan = findViewById(R.id.btn_scan);
         
         layoutInventory = findViewById(R.id.layout_inventory);
         layoutSettings = findViewById(R.id.layout_settings);
@@ -160,13 +165,6 @@ public class RoomInventoryActivity extends AppCompatActivity {
 
         btnLoadCsv.setOnClickListener(v -> loadCsvData());
         btnSaveInventory.setOnClickListener(v -> saveInventory());
-        btnScan.setOnClickListener(v -> {
-            if (isScanning) {
-                stopInventory();
-            } else {
-                startInventory();
-            }
-        });
         btnScanFind.setOnClickListener(v -> {
             if (isScanning) {
                 stopInventory();
@@ -405,8 +403,23 @@ public class RoomInventoryActivity extends AppCompatActivity {
                 currentRoomEquipments.add(eq);
             }
         }
+        totalRawReads = 0;
         adapter.updateData(currentRoomEquipments);
-        tvStatus.setText("Equipos esperados: " + currentRoomEquipments.size());
+        updateCounters();
+    }
+
+    private void updateCounters() {
+        int expected = currentRoomEquipments.size();
+        int read = 0;
+        for (Equipment eq : currentRoomEquipments) {
+            if (eq.isFound()) read++;
+        }
+        int missing = expected - read;
+
+        tvCounterExpected.setText(String.valueOf(expected));
+        tvCounterRead.setText(String.valueOf(read));
+        tvCounterMissing.setText(String.valueOf(missing));
+        tvCounterTotalReads.setText(String.valueOf(totalRawReads));
     }
 
     private String getEquipmentDisplayString(Equipment eq) {
@@ -529,9 +542,6 @@ public class RoomInventoryActivity extends AppCompatActivity {
         }
         
         isScanning = true;
-        tvStatus.setText("Escaneando...");
-        btnScan.setText("DETENER ESCANEO");
-        btnScan.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F44336")));
         
         btnScanFind.setText("DETENER BÚSQUEDA");
         btnScanFind.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F44336")));
@@ -547,9 +557,6 @@ public class RoomInventoryActivity extends AppCompatActivity {
         }
         
         isScanning = false;
-        tvStatus.setText("Escaneo detenido");
-        btnScan.setText("MANTENER PRESIONADO O PULSAR PARA ESCANEAR");
-        btnScan.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#2196F3")));
         
         btnScanFind.setText("MANTENER PRESIONADO O PULSAR PARA BUSCAR");
         btnScanFind.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#FF5722")));
@@ -590,9 +597,6 @@ public class RoomInventoryActivity extends AppCompatActivity {
                         if (isFindMode) {
                             if (epcStr.equalsIgnoreCase(targetEpc)) {
                                 int rssi = tfs.RSSI;
-                                // Expand the range so it starts detecting from further away
-                                // Previous: (rssi + 70) * 100 / 40 -> 0% at -70, 100% at -30
-                                // New: (rssi + 85) * 100 / 50 -> 0% at -85, 100% at -35
                                 int percentage = (rssi + 85) * 100 / 50;
                                 if (percentage < 0) percentage = 0;
                                 if (percentage > 100) percentage = 100;
@@ -600,11 +604,11 @@ public class RoomInventoryActivity extends AppCompatActivity {
                                 long currentTime = System.currentTimeMillis();
                                 int beepInterval;
                                 if (percentage < 20) {
-                                    beepInterval = 1000 - (percentage * 20); // 0% -> 1000ms, 20% -> 600ms
+                                    beepInterval = 1000 - (percentage * 20);
                                 } else if (percentage < 60) {
-                                    beepInterval = 600 - ((percentage - 20) * 10); // 20% -> 600ms, 60% -> 200ms
+                                    beepInterval = 600 - ((percentage - 20) * 10);
                                 } else {
-                                    beepInterval = 200 - (int)((percentage - 60) * 3.75); // 60% -> 200ms, 100% -> 50ms
+                                    beepInterval = 200 - (int)((percentage - 60) * 3.75);
                                 }
                                 if (beepInterval < 50) beepInterval = 50;
                                 

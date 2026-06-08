@@ -3,16 +3,16 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="12dp"
-    android:layout_margin="8dp"
+    android:padding="6dp"
+    android:layout_margin="2dp"
     android:background="#FAFAFA"
-    android:elevation="2dp">
+    android:elevation="1dp">
 
     <TextView
         android:id="@+id/tv_equipment_desc"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="18sp"
+        android:textSize="14sp"
         android:textStyle="bold"
         android:textColor="#333333"
         android:text="Descripción"/>
@@ -21,7 +21,7 @@
         android:id="@+id/tv_equipment_brand_model"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="14sp"
+        android:textSize="12sp"
         android:textColor="#555555"
         android:layout_marginTop="2dp"
         android:text="Marca - Modelo (S/N: 123)"/>
@@ -30,7 +30,7 @@
         android:id="@+id/tv_equipment_epc"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textSize="14sp"
+        android:textSize="10sp"
         android:textColor="#888888"
         android:layout_marginTop="4dp"
         android:text="EPC: E200..."/>
@@ -46,7 +46,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:textSize="14sp"
+            android:textSize="12sp"
             android:textStyle="bold"
             android:textColor="#FF0000"
             android:text="No Encontrado"/>
@@ -55,7 +55,7 @@
             android:id="@+id/tv_equipment_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="14sp"
+            android:textSize="12sp"
             android:textColor="#888888"
             android:text="Lecturas: 0"/>
     </LinearLayout>
