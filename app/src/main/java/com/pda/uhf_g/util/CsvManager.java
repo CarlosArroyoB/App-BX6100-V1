@@ -68,11 +68,23 @@ public class CsvManager {
                     String serialNumber = sheet.getCell(2, i).getContents().trim();
                     String brand = sheet.getCell(3, i).getContents().trim();
                     String model = sheet.getCell(4, i).getContents().trim();
-                    String room = sheet.getCell(5, i).getContents().trim();
-                    String description = sheet.getCell(6, i).getContents().trim();
+                    
+                    String type = "";
+                    String room = "";
+                    String description = "";
+                    
+                    if (sheet.getColumns() >= 8) {
+                        type = sheet.getCell(5, i).getContents().trim();
+                        room = sheet.getCell(6, i).getContents().trim();
+                        description = sheet.getCell(7, i).getContents().trim();
+                    } else {
+                        // Retro-compatibility (7 columns)
+                        room = sheet.getCell(5, i).getContents().trim();
+                        description = sheet.getCell(6, i).getContents().trim();
+                    }
                     
                     if (!epc.isEmpty()) {
-                        equipmentList.add(new Equipment(epc, itemNumber, serialNumber, brand, model, room, description));
+                        equipmentList.add(new Equipment(epc, itemNumber, serialNumber, brand, model, type, room, description));
                     }
                 }
             }
@@ -101,9 +113,20 @@ public class CsvManager {
                     String serialNumber = values[2].trim();
                     String brand = values[3].trim();
                     String model = values[4].trim();
-                    String room = values[5].trim();
-                    String description = values[6].trim();
-                    equipmentList.add(new Equipment(epc, itemNumber, serialNumber, brand, model, room, description));
+                    
+                    String type = "";
+                    String room = "";
+                    String description = "";
+                    
+                    if (values.length >= 8) {
+                        type = values[5].trim();
+                        room = values[6].trim();
+                        description = values[7].trim();
+                    } else {
+                        room = values[5].trim();
+                        description = values[6].trim();
+                    }
+                    equipmentList.add(new Equipment(epc, itemNumber, serialNumber, brand, model, type, room, description));
                 }
             }
         } catch (Exception e) {
@@ -112,10 +135,17 @@ public class CsvManager {
         return equipmentList;
     }
 
-    public static String exportInventoryResult(List<Equipment> equipments, String roomName) {
+    public static String exportInventoryResult(List<Equipment> equipments, String roomName, String typeName, String modelName) {
         File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
-        String fileName = "resultado_inventario_" + roomName + "_" + timeStamp + ".xls";
+        
+        StringBuilder filterSuffix = new StringBuilder();
+        if (!roomName.equals("Todos")) filterSuffix.append("_").append(roomName);
+        if (!typeName.equals("Todos")) filterSuffix.append("_").append(typeName);
+        if (!modelName.equals("Todos")) filterSuffix.append("_").append(modelName);
+        if (filterSuffix.length() == 0) filterSuffix.append("_Todos");
+
+        String fileName = "resultado_inventario" + filterSuffix.toString() + "_" + timeStamp + ".xls";
         File resultFile = new File(downloadsDir, fileName);
 
         try {
@@ -123,7 +153,7 @@ public class CsvManager {
             WritableSheet sheet = workbook.createSheet("Inventario", 0);
 
             // Headers
-            String[] headers = {"Codigo EPC", "Nro Item", "Numero de serie", "Marca", "Modelo", "Habitacion", "Descripcion", "Estado", "Lecturas", "Fecha"};
+            String[] headers = {"Codigo EPC", "Nro Item", "Numero de serie", "Marca", "Modelo", "Tipo", "Zona/Espacio", "Descripcion", "Estado", "Lecturas", "Fecha"};
             
             // Format for headers
             jxl.write.WritableFont boldFont = new jxl.write.WritableFont(jxl.write.WritableFont.ARIAL, 10, jxl.write.WritableFont.BOLD);
@@ -144,11 +174,12 @@ public class CsvManager {
                 sheet.addCell(new Label(2, row, eq.getSerialNumber()));
                 sheet.addCell(new Label(3, row, eq.getBrand()));
                 sheet.addCell(new Label(4, row, eq.getModel()));
-                sheet.addCell(new Label(5, row, eq.getRoom()));
-                sheet.addCell(new Label(6, row, eq.getDescription()));
-                sheet.addCell(new Label(7, row, eq.isFound() ? "Encontrado" : "Faltante"));
-                sheet.addCell(new Label(8, row, String.valueOf(eq.getReadCount())));
-                sheet.addCell(new Label(9, row, currentDate));
+                sheet.addCell(new Label(5, row, eq.getType()));
+                sheet.addCell(new Label(6, row, eq.getRoom()));
+                sheet.addCell(new Label(7, row, eq.getDescription()));
+                sheet.addCell(new Label(8, row, eq.isFound() ? "Encontrado" : "Faltante"));
+                sheet.addCell(new Label(9, row, String.valueOf(eq.getReadCount())));
+                sheet.addCell(new Label(10, row, currentDate));
             }
 
             workbook.write();
@@ -166,7 +197,7 @@ public class CsvManager {
             WritableSheet sheet = workbook.createSheet("Inventario", 0);
 
             // Headers
-            String[] headers = {"Codigo EPC", "Nro Item", "Numero de serie", "Marca", "Modelo", "Habitacion", "Descripcion", "Estado", "Lecturas", "Fecha"};
+            String[] headers = {"Codigo EPC", "Nro Item", "Numero de serie", "Marca", "Modelo", "Tipo", "Zona/Espacio", "Descripcion", "Estado", "Lecturas", "Fecha"};
             
             // Format for headers
             jxl.write.WritableFont boldFont = new jxl.write.WritableFont(jxl.write.WritableFont.ARIAL, 10, jxl.write.WritableFont.BOLD);
@@ -187,11 +218,12 @@ public class CsvManager {
                 sheet.addCell(new Label(2, row, eq.getSerialNumber()));
                 sheet.addCell(new Label(3, row, eq.getBrand()));
                 sheet.addCell(new Label(4, row, eq.getModel()));
-                sheet.addCell(new Label(5, row, eq.getRoom()));
-                sheet.addCell(new Label(6, row, eq.getDescription()));
-                sheet.addCell(new Label(7, row, eq.isFound() ? "Encontrado" : "Faltante"));
-                sheet.addCell(new Label(8, row, String.valueOf(eq.getReadCount())));
-                sheet.addCell(new Label(9, row, currentDate));
+                sheet.addCell(new Label(5, row, eq.getType()));
+                sheet.addCell(new Label(6, row, eq.getRoom()));
+                sheet.addCell(new Label(7, row, eq.getDescription()));
+                sheet.addCell(new Label(8, row, eq.isFound() ? "Encontrado" : "Faltante"));
+                sheet.addCell(new Label(9, row, String.valueOf(eq.getReadCount())));
+                sheet.addCell(new Label(10, row, currentDate));
             }
 
             workbook.write();

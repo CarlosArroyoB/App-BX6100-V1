@@ -59,11 +59,15 @@ public class RoomInventoryActivity extends AppCompatActivity {
 
     private static final String TAG = "RoomInventoryActivity";
     private Spinner spinnerRooms;
-    private Button btnLoadCsv, btnSaveInventory;
+    private Spinner spinnerTypes;
+    private Spinner spinnerModels;
+    private Button btnLoadCsv;
+    private Button btnSaveInventory;
     private TextView tvStatus;
     private RecyclerView rvEquipment;
 
     private Button btnScan;
+    private Button btnScanFind;
     
     private LinearLayout layoutInventory, layoutSettings, layoutFind;
     private BottomNavigationView bottomNavigation;
@@ -79,13 +83,14 @@ public class RoomInventoryActivity extends AppCompatActivity {
     private TextView tvTargetEpcDisplay;
     private ImageView ivWifiRadar;
     private TextView tvSignalPercentage;
-    private Button btnScanFind;
     private String targetEpc = "";
 
     private EquipmentAdapter adapter;
     private List<Equipment> allEquipments = new ArrayList<>();
     private List<Equipment> currentRoomEquipments = new ArrayList<>();
-    private String selectedRoom = "";
+    private String selectedRoom = "Todos";
+    private String selectedType = "Todos";
+    private String selectedModel = "Todos";
 
     public UHFRManager mUhfrManager;
     private ScanUtil scanUtil;
@@ -124,6 +129,8 @@ public class RoomInventoryActivity extends AppCompatActivity {
         toggle.syncState();
 
         spinnerRooms = findViewById(R.id.spinner_rooms);
+        spinnerTypes = findViewById(R.id.spinner_types);
+        spinnerModels = findViewById(R.id.spinner_models);
         btnLoadCsv = findViewById(R.id.btn_load_csv);
         btnSaveInventory = findViewById(R.id.btn_save_inventory);
         tvStatus = findViewById(R.id.tv_status);
@@ -209,16 +216,22 @@ public class RoomInventoryActivity extends AppCompatActivity {
 
         setupSettings();
 
-        spinnerRooms.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+        AdapterView.OnItemSelectedListener filterListener = new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                selectedRoom = (String) parent.getItemAtPosition(position);
-                filterByRoom();
+                if (parent == spinnerRooms) selectedRoom = (String) parent.getItemAtPosition(position);
+                if (parent == spinnerTypes) selectedType = (String) parent.getItemAtPosition(position);
+                if (parent == spinnerModels) selectedModel = (String) parent.getItemAtPosition(position);
+                applyFilters();
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {}
-        });
+        };
+
+        spinnerRooms.setOnItemSelectedListener(filterListener);
+        spinnerTypes.setOnItemSelectedListener(filterListener);
+        spinnerModels.setOnItemSelectedListener(filterListener);
 
         checkPermissions();
         
@@ -305,19 +318,39 @@ public class RoomInventoryActivity extends AppCompatActivity {
                 }
 
                 Set<String> rooms = new HashSet<>();
+                Set<String> types = new HashSet<>();
+                Set<String> models = new HashSet<>();
+                
+                rooms.add("Todos");
+                types.add("Todos");
+                models.add("Todos");
+
                 for (Equipment eq : allEquipments) {
-                    rooms.add(eq.getRoom());
+                    if (eq.getRoom() != null && !eq.getRoom().trim().isEmpty()) rooms.add(eq.getRoom());
+                    if (eq.getType() != null && !eq.getType().trim().isEmpty()) types.add(eq.getType());
+                    if (eq.getModel() != null && !eq.getModel().trim().isEmpty()) models.add(eq.getModel());
                 }
 
                 List<String> roomList = new ArrayList<>(rooms);
-                ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, roomList);
-                spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                spinnerRooms.setAdapter(spinnerAdapter);
+                List<String> typeList = new ArrayList<>(types);
+                List<String> modelList = new ArrayList<>(models);
 
-                if (!roomList.isEmpty()) {
-                    selectedRoom = roomList.get(0);
-                    filterByRoom();
-                }
+                ArrayAdapter<String> roomAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, roomList);
+                roomAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerRooms.setAdapter(roomAdapter);
+
+                ArrayAdapter<String> typeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, typeList);
+                typeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerTypes.setAdapter(typeAdapter);
+
+                ArrayAdapter<String> modelAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, modelList);
+                modelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                spinnerModels.setAdapter(modelAdapter);
+
+                selectedRoom = "Todos";
+                selectedType = "Todos";
+                selectedModel = "Todos";
+                applyFilters();
             }
         } else if (requestCode == 102 && resultCode == RESULT_OK && data != null) {
             android.net.Uri uri = data.getData();
@@ -332,17 +365,21 @@ public class RoomInventoryActivity extends AppCompatActivity {
         }
     }
 
-    private void filterByRoom() {
+    private void applyFilters() {
         currentRoomEquipments.clear();
         for (Equipment eq : allEquipments) {
-            if (eq.getRoom().equals(selectedRoom)) {
-                // Reset found status when switching rooms
+            boolean matchRoom = selectedRoom.equals("Todos") || (eq.getRoom() != null && eq.getRoom().equals(selectedRoom));
+            boolean matchType = selectedType.equals("Todos") || (eq.getType() != null && eq.getType().equals(selectedType));
+            boolean matchModel = selectedModel.equals("Todos") || (eq.getModel() != null && eq.getModel().equals(selectedModel));
+
+            if (matchRoom && matchType && matchModel) {
                 eq.setFound(false);
+                eq.resetReadCount();
                 currentRoomEquipments.add(eq);
             }
         }
         adapter.updateData(currentRoomEquipments);
-        tvStatus.setText("Habitación: " + selectedRoom + " (" + currentRoomEquipments.size() + " equipos esperados)");
+        tvStatus.setText("Equipos esperados: " + currentRoomEquipments.size());
     }
 
     private void saveInventory() {
@@ -354,7 +391,13 @@ public class RoomInventoryActivity extends AppCompatActivity {
         android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(android.content.Intent.CATEGORY_OPENABLE);
         intent.setType("application/vnd.ms-excel");
-        intent.putExtra(android.content.Intent.EXTRA_TITLE, "resultado_inventario_" + selectedRoom + "_" + timeStamp + ".xls");
+        StringBuilder filterSuffix = new StringBuilder();
+        if (!selectedRoom.equals("Todos")) filterSuffix.append("_").append(selectedRoom);
+        if (!selectedType.equals("Todos")) filterSuffix.append("_").append(selectedType);
+        if (!selectedModel.equals("Todos")) filterSuffix.append("_").append(selectedModel);
+        if (filterSuffix.length() == 0) filterSuffix.append("_Todos");
+
+        intent.putExtra(android.content.Intent.EXTRA_TITLE, "resultado_inventario" + filterSuffix.toString() + "_" + timeStamp + ".xls");
         startActivityForResult(intent, 102);
     }
 
@@ -542,9 +585,18 @@ public class RoomInventoryActivity extends AppCompatActivity {
                                 });
                             }
                         } else {
-                            UtilSound.play(1, 0);
-                            Message msg = handler.obtainMessage(MSG_EPC, epcStr);
-                            handler.sendMessage(msg);
+                            boolean inFilter = false;
+                            for (Equipment e : currentRoomEquipments) {
+                                if (e.getEpc().equalsIgnoreCase(epcStr)) {
+                                    inFilter = true;
+                                    break;
+                                }
+                            }
+                            if (inFilter) {
+                                UtilSound.play(1, 0);
+                                Message msg = handler.obtainMessage(MSG_EPC, epcStr);
+                                handler.sendMessage(msg);
+                            }
                         }
                     }
                 }
