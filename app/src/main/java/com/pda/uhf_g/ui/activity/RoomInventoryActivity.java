@@ -24,6 +24,8 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import android.graphics.drawable.ClipDrawable;
+import android.graphics.drawable.LayerDrawable;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
 
@@ -447,7 +449,11 @@ public class RoomInventoryActivity extends AppCompatActivity {
     private void startInventory() {
         if (mUhfrManager == null) return;
         mUhfrManager.setCancleInventoryFilter();
-        mUhfrManager.asyncStartReading();
+        
+        if (!isFindMode) {
+            mUhfrManager.asyncStartReading();
+        }
+        
         isScanning = true;
         tvStatus.setText("Escaneando...");
         btnScan.setText("DETENER ESCANEO");
@@ -461,7 +467,11 @@ public class RoomInventoryActivity extends AppCompatActivity {
 
     private void stopInventory() {
         if (mUhfrManager == null) return;
-        mUhfrManager.asyncStopReading();
+        
+        if (!isFindMode) {
+            mUhfrManager.asyncStopReading();
+        }
+        
         isScanning = false;
         tvStatus.setText("Escaneo detenido");
         btnScan.setText("MANTENER PRESIONADO O PULSAR PARA ESCANEAR");
@@ -476,35 +486,59 @@ public class RoomInventoryActivity extends AppCompatActivity {
         
         runOnUiThread(() -> {
             tvSignalPercentage.setText("0%");
-            ivWifiRadar.setAlpha(0.2f);
+            if (ivWifiRadar.getDrawable() instanceof LayerDrawable) {
+                LayerDrawable layerDrawable = (LayerDrawable) ivWifiRadar.getDrawable();
+                ClipDrawable clipDrawable = (ClipDrawable) layerDrawable.findDrawableByLayerId(R.id.wifi_clip);
+                if (clipDrawable != null) {
+                    clipDrawable.setLevel(0);
+                }
+            }
         });
     }
 
     class InventoryThread extends Thread {
+        private long lastBeepTime = 0;
+
         @Override
         public void run() {
             while (isScanning) {
-                List<Reader.TAGINFO> list1 = mUhfrManager.tagInventoryRealTime();
+                List<Reader.TAGINFO> list1;
+                if (isFindMode) {
+                    list1 = mUhfrManager.tagInventoryByTimer((short) 50);
+                } else {
+                    list1 = mUhfrManager.tagInventoryRealTime();
+                }
+
                 if (list1 != null && list1.size() > 0) {
                     for (Reader.TAGINFO tfs : list1) {
                         String epcStr = Reader.bytes_Hexstr(tfs.EpcId);
                         
                         if (isFindMode) {
                             if (epcStr.equalsIgnoreCase(targetEpc)) {
-                                UtilSound.play(1, 0);
                                 int rssi = tfs.RSSI;
-                                int percentage = (rssi + 90) * 100 / 60;
+                                int percentage = (rssi + 70) * 100 / 40;
                                 if (percentage < 0) percentage = 0;
                                 if (percentage > 100) percentage = 100;
                                 
+                                long currentTime = System.currentTimeMillis();
+                                int beepInterval = (int) (1000 - (percentage * 9.5));
+                                if (beepInterval < 50) beepInterval = 50;
+                                
+                                if (currentTime - lastBeepTime > beepInterval) {
+                                    UtilSound.play(1, 0);
+                                    lastBeepTime = currentTime;
+                                }
+                                
                                 int finalPercentage = percentage;
                                 runOnUiThread(() -> {
-                                    tvSignalPercentage.setText(finalPercentage + "%");
-                                    if (finalPercentage > 80) ivWifiRadar.setAlpha(1.0f);
-                                    else if (finalPercentage > 60) ivWifiRadar.setAlpha(0.8f);
-                                    else if (finalPercentage > 40) ivWifiRadar.setAlpha(0.6f);
-                                    else if (finalPercentage > 20) ivWifiRadar.setAlpha(0.4f);
-                                    else ivWifiRadar.setAlpha(0.2f);
+                                    tvSignalPercentage.setText(finalPercentage + "% (Raw: " + rssi + ")");
+                                    if (ivWifiRadar.getDrawable() instanceof LayerDrawable) {
+                                        LayerDrawable layerDrawable = (LayerDrawable) ivWifiRadar.getDrawable();
+                                        ClipDrawable clipDrawable = (ClipDrawable) layerDrawable.findDrawableByLayerId(R.id.wifi_clip);
+                                        if (clipDrawable != null) {
+                                            clipDrawable.setLevel(finalPercentage * 100);
+                                        }
+                                    }
                                 });
                             }
                         } else {

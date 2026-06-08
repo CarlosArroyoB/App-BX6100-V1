@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Background (Empty Wi-Fi) -->
+    <item android:id="@+id/wifi_bg" android:drawable="@drawable/ic_wifi_grey" />
+
+    <!-- Foreground (Filled Wi-Fi) with Clip -->
+    <item android:id="@+id/wifi_clip">
+        <clip
+            android:clipOrientation="vertical"
+            android:gravity="bottom"
+            android:drawable="@drawable/ic_wifi_orange" />
+    </item>
+</layer-list>
