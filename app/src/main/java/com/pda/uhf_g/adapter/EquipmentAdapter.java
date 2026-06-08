@@ -22,6 +22,16 @@ public class EquipmentAdapter extends RecyclerView.Adapter<EquipmentAdapter.Equi
         this.equipmentList = equipmentList;
     }
 
+    public interface OnItemLongClickListener {
+        void onItemLongClick(String epc);
+    }
+
+    private OnItemLongClickListener longClickListener;
+
+    public void setOnItemLongClickListener(OnItemLongClickListener listener) {
+        this.longClickListener = listener;
+    }
+
     public void updateData(List<Equipment> newEquipmentList) {
         this.equipmentList = newEquipmentList;
         notifyDataSetChanged();
@@ -71,6 +81,17 @@ public class EquipmentAdapter extends RecyclerView.Adapter<EquipmentAdapter.Equi
         }
         
         holder.tvCount.setText("Lecturas: " + equipment.getReadCount());
+
+        holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                if (longClickListener != null) {
+                    longClickListener.onItemLongClick(equipment.getEpc());
+                    return true;
+                }
+                return false;
+            }
+        });
     }
 
     @Override

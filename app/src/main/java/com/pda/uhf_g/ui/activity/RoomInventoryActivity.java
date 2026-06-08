@@ -16,6 +16,8 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.Spinner;
@@ -23,14 +25,16 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
-import android.widget.Spinner;
-import android.widget.TextView;
-import android.widget.Toast;
+import com.google.android.material.navigation.NavigationView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -42,8 +46,6 @@ import com.pda.uhf_g.util.CsvManager;
 import com.pda.uhf_g.util.ScanUtil;
 import com.pda.uhf_g.util.SharedUtil;
 import com.pda.uhf_g.util.UtilSound;
-import com.pda.uhf_g.util.ScanUtil;
-import com.pda.uhf_g.util.SharedUtil;
 import com.uhf.api.cls.Reader;
 
 import java.util.ArrayList;
@@ -61,11 +63,22 @@ public class RoomInventoryActivity extends AppCompatActivity {
 
     private Button btnScan;
     
-    private LinearLayout layoutInventory, layoutSettings;
+    private LinearLayout layoutInventory, layoutSettings, layoutFind;
     private BottomNavigationView bottomNavigation;
     private SeekBar seekbarPower;
     private TextView tvPowerValue;
     private Button btnSaveSettings;
+
+    private DrawerLayout drawerLayout;
+    private NavigationView navigationView;
+    private boolean isFindMode = false;
+    private EditText etTargetEpc;
+    private Button btnSetTarget;
+    private TextView tvTargetEpcDisplay;
+    private ImageView ivWifiRadar;
+    private TextView tvSignalPercentage;
+    private Button btnScanFind;
+    private String targetEpc = "";
 
     private EquipmentAdapter adapter;
     private List<Equipment> allEquipments = new ArrayList<>();
@@ -97,6 +110,17 @@ public class RoomInventoryActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_room_inventory);
 
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+        drawerLayout = findViewById(R.id.drawer_layout);
+        navigationView = findViewById(R.id.nav_view);
+
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawerLayout, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawerLayout.addDrawerListener(toggle);
+        toggle.syncState();
+
         spinnerRooms = findViewById(R.id.spinner_rooms);
         btnLoadCsv = findViewById(R.id.btn_load_csv);
         btnSaveInventory = findViewById(R.id.btn_save_inventory);
@@ -106,10 +130,18 @@ public class RoomInventoryActivity extends AppCompatActivity {
         
         layoutInventory = findViewById(R.id.layout_inventory);
         layoutSettings = findViewById(R.id.layout_settings);
+        layoutFind = findViewById(R.id.layout_find);
         bottomNavigation = findViewById(R.id.bottom_navigation);
         seekbarPower = findViewById(R.id.seekbar_power);
         tvPowerValue = findViewById(R.id.tv_power_value);
         btnSaveSettings = findViewById(R.id.btn_save_settings);
+
+        etTargetEpc = findViewById(R.id.et_target_epc);
+        btnSetTarget = findViewById(R.id.btn_set_target);
+        tvTargetEpcDisplay = findViewById(R.id.tv_target_epc_display);
+        ivWifiRadar = findViewById(R.id.iv_wifi_radar);
+        tvSignalPercentage = findViewById(R.id.tv_signal_percentage);
+        btnScanFind = findViewById(R.id.btn_scan_find);
 
         rvEquipment.setLayoutManager(new LinearLayoutManager(this));
         adapter = new EquipmentAdapter(currentRoomEquipments);
@@ -124,7 +156,55 @@ public class RoomInventoryActivity extends AppCompatActivity {
                 startInventory();
             }
         });
-        
+        btnScanFind.setOnClickListener(v -> {
+            if (isScanning) {
+                stopInventory();
+            } else {
+                startInventory();
+            }
+        });
+
+        adapter.setOnItemLongClickListener(epc -> {
+            targetEpc = epc;
+            tvTargetEpcDisplay.setText("Objetivo: " + targetEpc);
+            etTargetEpc.setText(targetEpc);
+            
+            isFindMode = true;
+            layoutInventory.setVisibility(View.GONE);
+            layoutFind.setVisibility(View.VISIBLE);
+            layoutSettings.setVisibility(View.GONE);
+            bottomNavigation.setVisibility(View.GONE);
+            
+            Toast.makeText(this, "Etiqueta fijada para búsqueda", Toast.LENGTH_SHORT).show();
+        });
+
+        btnSetTarget.setOnClickListener(v -> {
+            String epc = etTargetEpc.getText().toString().trim();
+            if (!epc.isEmpty()) {
+                targetEpc = epc;
+                tvTargetEpcDisplay.setText("Objetivo: " + targetEpc);
+                Toast.makeText(this, "Objetivo fijado", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        navigationView.setNavigationItemSelectedListener(item -> {
+            if (item.getItemId() == R.id.nav_mode_inventory) {
+                isFindMode = false;
+                layoutInventory.setVisibility(View.VISIBLE);
+                layoutFind.setVisibility(View.GONE);
+                layoutSettings.setVisibility(View.GONE);
+                bottomNavigation.setVisibility(View.VISIBLE);
+            } else if (item.getItemId() == R.id.nav_mode_find) {
+                isFindMode = true;
+                layoutInventory.setVisibility(View.GONE);
+                layoutFind.setVisibility(View.VISIBLE);
+                layoutSettings.setVisibility(View.GONE);
+                bottomNavigation.setVisibility(View.GONE);
+            }
+            drawerLayout.closeDrawer(GravityCompat.START);
+            return true;
+        });
+
         setupSettings();
 
         spinnerRooms.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -153,11 +233,8 @@ public class RoomInventoryActivity extends AppCompatActivity {
                 layoutInventory.setVisibility(View.GONE);
                 layoutSettings.setVisibility(View.VISIBLE);
                 
-                // Initialize seekbar with current power
                 if (sharedUtil != null) {
                     int currentPower = sharedUtil.getPower();
-                    // SeekBar max is 28. Real power ranges from 5 to 33.
-                    // power = progress + 5
                     int progress = currentPower - 5;
                     if (progress < 0) progress = 0;
                     if (progress > 28) progress = 28;
@@ -375,6 +452,10 @@ public class RoomInventoryActivity extends AppCompatActivity {
         tvStatus.setText("Escaneando...");
         btnScan.setText("DETENER ESCANEO");
         btnScan.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F44336")));
+        
+        btnScanFind.setText("DETENER BÚSQUEDA");
+        btnScanFind.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F44336")));
+        
         new InventoryThread().start();
     }
 
@@ -385,9 +466,18 @@ public class RoomInventoryActivity extends AppCompatActivity {
         tvStatus.setText("Escaneo detenido");
         btnScan.setText("MANTENER PRESIONADO O PULSAR PARA ESCANEAR");
         btnScan.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#2196F3")));
+        
+        btnScanFind.setText("MANTENER PRESIONADO O PULSAR PARA BUSCAR");
+        btnScanFind.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#FF5722")));
+        
         if (adapter != null) {
             adapter.notifyDataSetChanged();
         }
+        
+        runOnUiThread(() -> {
+            tvSignalPercentage.setText("0%");
+            ivWifiRadar.setAlpha(0.2f);
+        });
     }
 
     class InventoryThread extends Thread {
@@ -396,11 +486,32 @@ public class RoomInventoryActivity extends AppCompatActivity {
             while (isScanning) {
                 List<Reader.TAGINFO> list1 = mUhfrManager.tagInventoryRealTime();
                 if (list1 != null && list1.size() > 0) {
-                    UtilSound.play(1, 0);
                     for (Reader.TAGINFO tfs : list1) {
                         String epcStr = Reader.bytes_Hexstr(tfs.EpcId);
-                        Message msg = handler.obtainMessage(MSG_EPC, epcStr);
-                        handler.sendMessage(msg);
+                        
+                        if (isFindMode) {
+                            if (epcStr.equalsIgnoreCase(targetEpc)) {
+                                UtilSound.play(1, 0);
+                                int rssi = tfs.RSSI;
+                                int percentage = (rssi + 90) * 100 / 60;
+                                if (percentage < 0) percentage = 0;
+                                if (percentage > 100) percentage = 100;
+                                
+                                int finalPercentage = percentage;
+                                runOnUiThread(() -> {
+                                    tvSignalPercentage.setText(finalPercentage + "%");
+                                    if (finalPercentage > 80) ivWifiRadar.setAlpha(1.0f);
+                                    else if (finalPercentage > 60) ivWifiRadar.setAlpha(0.8f);
+                                    else if (finalPercentage > 40) ivWifiRadar.setAlpha(0.6f);
+                                    else if (finalPercentage > 20) ivWifiRadar.setAlpha(0.4f);
+                                    else ivWifiRadar.setAlpha(0.2f);
+                                });
+                            }
+                        } else {
+                            UtilSound.play(1, 0);
+                            Message msg = handler.obtainMessage(MSG_EPC, epcStr);
+                            handler.sendMessage(msg);
+                        }
                     }
                 }
                 try {
