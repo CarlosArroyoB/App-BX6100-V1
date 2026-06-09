@@ -89,6 +89,14 @@ public class RoomInventoryActivity extends AppCompatActivity {
     private TextView tvSignalPercentage;
     private String targetEpc = "";
 
+    private View layoutScanIndicator;
+    private View viewScanDot;
+    private TextView tvScanStatus;
+    
+    private View layoutScanIndicatorFind;
+    private View viewScanDotFind;
+    private TextView tvScanStatusFind;
+
     private EquipmentAdapter adapter;
     private List<Equipment> allEquipments = new ArrayList<>();
     private List<Equipment> currentRoomEquipments = new ArrayList<>();
@@ -160,6 +168,14 @@ public class RoomInventoryActivity extends AppCompatActivity {
         ivWifiRadar = findViewById(R.id.iv_wifi_radar);
         tvSignalPercentage = findViewById(R.id.tv_signal_percentage);
         btnScanFind = findViewById(R.id.btn_scan_find);
+
+        layoutScanIndicator = findViewById(R.id.layout_scan_indicator);
+        viewScanDot = findViewById(R.id.view_scan_dot);
+        tvScanStatus = findViewById(R.id.tv_scan_status);
+
+        layoutScanIndicatorFind = findViewById(R.id.layout_scan_indicator_find);
+        viewScanDotFind = findViewById(R.id.view_scan_dot_find);
+        tvScanStatusFind = findViewById(R.id.tv_scan_status_find);
 
         rvEquipment.setLayoutManager(new LinearLayoutManager(this));
         adapter = new EquipmentAdapter(currentRoomEquipments);
@@ -633,6 +649,18 @@ public class RoomInventoryActivity extends AppCompatActivity {
         btnScanFind.setText("DETENER BÚSQUEDA");
         btnScanFind.setBackgroundTintList(android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#F44336")));
         
+        runOnUiThread(() -> {
+            layoutScanIndicator.setBackgroundResource(R.drawable.bg_scan_indicator_active);
+            viewScanDot.setBackgroundResource(R.drawable.shape_dot_active);
+            tvScanStatus.setText("Escaneando");
+            tvScanStatus.setTextColor(android.graphics.Color.parseColor("#4CAF50"));
+            
+            layoutScanIndicatorFind.setBackgroundResource(R.drawable.bg_scan_indicator_active);
+            viewScanDotFind.setBackgroundResource(R.drawable.shape_dot_active);
+            tvScanStatusFind.setText("Buscando");
+            tvScanStatusFind.setTextColor(android.graphics.Color.parseColor("#4CAF50"));
+        });
+        
         new InventoryThread().start();
     }
 
@@ -661,6 +689,16 @@ public class RoomInventoryActivity extends AppCompatActivity {
                     clipDrawable.setLevel(0);
                 }
             }
+            
+            layoutScanIndicator.setBackgroundResource(R.drawable.bg_scan_indicator_inactive);
+            viewScanDot.setBackgroundResource(R.drawable.shape_dot_inactive);
+            tvScanStatus.setText("En pausa");
+            tvScanStatus.setTextColor(android.graphics.Color.parseColor("#757575"));
+            
+            layoutScanIndicatorFind.setBackgroundResource(R.drawable.bg_scan_indicator_inactive);
+            viewScanDotFind.setBackgroundResource(R.drawable.shape_dot_inactive);
+            tvScanStatusFind.setText("En pausa");
+            tvScanStatusFind.setTextColor(android.graphics.Color.parseColor("#757575"));
         });
     }
 

@@ -8,14 +8,50 @@
     android:visibility="gone"
     android:background="#EFEFEF">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <RelativeLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Modo Búsqueda"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:layout_gravity="center"
-        android:layout_marginBottom="16dp"/>
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Modo Búsqueda"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:layout_centerInParent="true"/>
+
+        <LinearLayout
+            android:id="@+id/layout_scan_indicator_find"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_scan_indicator_inactive"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp">
+
+            <View
+                android:id="@+id/view_scan_dot_find"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/shape_dot_inactive"
+                android:layout_marginEnd="6dp"/>
+
+            <TextView
+                android:id="@+id/tv_scan_status_find"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="En pausa"
+                android:textSize="12sp"
+                android:textColor="#757575"
+                android:textStyle="bold"/>
+        </LinearLayout>
+    </RelativeLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
