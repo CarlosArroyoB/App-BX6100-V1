@@ -236,22 +236,49 @@ public class RoomInventoryActivity extends AppCompatActivity {
 
         setupSettings();
 
-        AdapterView.OnItemSelectedListener filterListener = new AdapterView.OnItemSelectedListener() {
+        spinnerRooms.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                if (parent == spinnerRooms) selectedRoom = (String) parent.getItemAtPosition(position);
-                if (parent == spinnerTypes) selectedType = (String) parent.getItemAtPosition(position);
-                if (parent == spinnerModels) selectedModel = (String) parent.getItemAtPosition(position);
-                applyFilters();
+                if (isUpdatingSpinners) return;
+                String newRoom = (String) parent.getItemAtPosition(position);
+                if (selectedRoom == null || !newRoom.equals(selectedRoom)) {
+                    selectedRoom = newRoom;
+                    updateTypeSpinner();
+                    applyFilters();
+                }
             }
-
             @Override
             public void onNothingSelected(AdapterView<?> parent) {}
-        };
+        });
 
-        spinnerRooms.setOnItemSelectedListener(filterListener);
-        spinnerTypes.setOnItemSelectedListener(filterListener);
-        spinnerModels.setOnItemSelectedListener(filterListener);
+        spinnerTypes.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (isUpdatingSpinners) return;
+                String newType = (String) parent.getItemAtPosition(position);
+                if (selectedType == null || !newType.equals(selectedType)) {
+                    selectedType = newType;
+                    updateModelSpinner();
+                    applyFilters();
+                }
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+
+        spinnerModels.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                if (isUpdatingSpinners) return;
+                String newModel = (String) parent.getItemAtPosition(position);
+                if (selectedModel == null || !newModel.equals(selectedModel)) {
+                    selectedModel = newModel;
+                    applyFilters();
+                }
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
 
         checkPermissions();
         
@@ -338,38 +365,27 @@ public class RoomInventoryActivity extends AppCompatActivity {
                 }
 
                 Set<String> rooms = new HashSet<>();
-                Set<String> types = new HashSet<>();
-                Set<String> models = new HashSet<>();
 
                 for (Equipment eq : allEquipments) {
                     if (eq.getRoom() != null && !eq.getRoom().trim().isEmpty()) rooms.add(eq.getRoom());
-                    if (eq.getType() != null && !eq.getType().trim().isEmpty()) types.add(eq.getType());
-                    if (eq.getModel() != null && !eq.getModel().trim().isEmpty()) models.add(eq.getModel());
                 }
 
                 List<String> roomList = new ArrayList<>();
                 roomList.add("Todos");
                 roomList.addAll(rooms);
 
-                List<String> typeList = new ArrayList<>();
-                typeList.add("Todos");
-                typeList.addAll(types);
-
-                List<String> modelList = new ArrayList<>();
-                modelList.add("Todos");
-                modelList.addAll(models);
-
                 ArrayAdapter<String> roomAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, roomList);
                 roomAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                
+                isUpdatingSpinners = true;
                 spinnerRooms.setAdapter(roomAdapter);
-
-                ArrayAdapter<String> typeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, typeList);
-                typeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                spinnerTypes.setAdapter(typeAdapter);
-
-                ArrayAdapter<String> modelAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, modelList);
-                modelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                spinnerModels.setAdapter(modelAdapter);
+                spinnerRooms.setSelection(0, false);
+                selectedRoom = "Todos";
+                selectedType = "Todos";
+                selectedModel = "Todos";
+                isUpdatingSpinners = false;
+                
+                updateTypeSpinner();
 
                 List<String> findNames = new ArrayList<>();
                 for (Equipment eq : allEquipments) {
@@ -378,9 +394,6 @@ public class RoomInventoryActivity extends AppCompatActivity {
                 ArrayAdapter<String> findAdapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, findNames);
                 autocompleteFindEquipment.setAdapter(findAdapter);
 
-                selectedRoom = "Todos";
-                selectedType = "Todos";
-                selectedModel = "Todos";
                 applyFilters();
             }
         } else if (requestCode == 102 && resultCode == RESULT_OK && data != null) {
@@ -394,6 +407,74 @@ public class RoomInventoryActivity extends AppCompatActivity {
                 }
             }
         }
+    }
+
+    private boolean isUpdatingSpinners = false;
+
+    private void updateTypeSpinner() {
+        if (allEquipments == null) return;
+        isUpdatingSpinners = true;
+        
+        Set<String> types = new HashSet<>();
+        for (Equipment eq : allEquipments) {
+            boolean matchRoom = selectedRoom.equals("Todos") || (eq.getRoom() != null && eq.getRoom().equals(selectedRoom));
+            if (matchRoom && eq.getType() != null && !eq.getType().trim().isEmpty()) {
+                types.add(eq.getType());
+            }
+        }
+        
+        List<String> typeList = new ArrayList<>();
+        typeList.add("Todos");
+        typeList.addAll(types);
+        
+        ArrayAdapter<String> typeAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, typeList);
+        typeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        
+        String prevSelection = selectedType;
+        spinnerTypes.setAdapter(typeAdapter);
+        if (prevSelection != null && typeList.contains(prevSelection)) {
+            spinnerTypes.setSelection(typeList.indexOf(prevSelection), false);
+            selectedType = prevSelection;
+        } else {
+            selectedType = "Todos";
+            spinnerTypes.setSelection(0, false);
+        }
+        isUpdatingSpinners = false;
+        
+        updateModelSpinner();
+    }
+
+    private void updateModelSpinner() {
+        if (allEquipments == null) return;
+        isUpdatingSpinners = true;
+        
+        Set<String> models = new HashSet<>();
+        for (Equipment eq : allEquipments) {
+            boolean matchRoom = selectedRoom.equals("Todos") || (eq.getRoom() != null && eq.getRoom().equals(selectedRoom));
+            boolean matchType = selectedType.equals("Todos") || (eq.getType() != null && eq.getType().equals(selectedType));
+            
+            if (matchRoom && matchType && eq.getModel() != null && !eq.getModel().trim().isEmpty()) {
+                models.add(eq.getModel());
+            }
+        }
+        
+        List<String> modelList = new ArrayList<>();
+        modelList.add("Todos");
+        modelList.addAll(models);
+        
+        ArrayAdapter<String> modelAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, modelList);
+        modelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        
+        String prevSelection = selectedModel;
+        spinnerModels.setAdapter(modelAdapter);
+        if (prevSelection != null && modelList.contains(prevSelection)) {
+            spinnerModels.setSelection(modelList.indexOf(prevSelection), false);
+            selectedModel = prevSelection;
+        } else {
+            selectedModel = "Todos";
+            spinnerModels.setSelection(0, false);
+        }
+        isUpdatingSpinners = false;
     }
 
     private void applyFilters() {
